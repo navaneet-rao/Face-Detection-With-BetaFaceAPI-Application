@@ -1,6 +1,6 @@
 import cv2
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import os
 class FaceDetectionApp:
@@ -10,23 +10,37 @@ class FaceDetectionApp:
 
         self.video_source = 0
         self.vid = cv2.VideoCapture(self.video_source)
-
+        
+        self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, 350) 
+        self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 350) 
+        
         self.window.state('zoomed')
+        
+        self.canvas_frame = tk.Frame(root)
+        
+        self.canvas_width=self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+        self.canvas_height=self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-        self.canvas_top = tk.Canvas(window, bg='grey', width=self.vid.get(cv2.CAP_PROP_FRAME_WIDTH), height=self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.canvas_top.pack(side=tk.TOP, padx=10, pady=10, anchor=tk.NW)
-
+        self.canvas_top = tk.Canvas(self.canvas_frame, bg='grey', width=self.canvas_width, height=self.canvas_height )
+        self.canvas_top.grid(row=0, column=0)        
+        self.canvas_captured_image = tk.Canvas(self.canvas_frame, bg='grey', width=self.canvas_width, height=self.canvas_height)
+        self.canvas_captured_image.grid(row=0, column=1)        
+        
+        self.canvas_frame.pack(side=tk.LEFT, padx=10, pady=10, anchor=tk.NW )
+        
+        
+        
         self.btn_capture = tk.Button(window, text="Capture", width=10, height=2, bg='yellow', command=self.capture)
-        self.btn_capture.pack(side=tk.TOP, padx=10, pady=10, anchor=tk.NW)
+        self.btn_capture.pack(side=tk.TOP, padx=10, pady=10)
 
         self.btn_upload = tk.Button(window, text="Upload Capture Image", width=20, height=2, bg='yellow', command=self.upload_image)
-        self.btn_upload.pack(side=tk.TOP, padx=10, pady=10, anchor=tk.NW)
+        self.btn_upload.pack(side=tk.TOP, padx=10, pady=10)
+
+
 
         self.btn_quit = tk.Button(window, text="Quit", width=10, height=2, bg='red', command=self.quit_app)
         self.btn_quit.pack(side=tk.RIGHT, padx=10, pady=10, anchor=tk.SE)
 
-        self.canvas_captured_image = tk.Canvas(window, bg='grey', width=self.vid.get(cv2.CAP_PROP_FRAME_WIDTH), height=self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.canvas_captured_image.pack(side=tk.BOTTOM, padx=10, pady=10, anchor=tk.SW)
 
         self.is_capturing = False
         self.update()
@@ -38,31 +52,33 @@ class FaceDetectionApp:
             flipped_frame = cv2.flip(frame, 1)
 
             cv2.imwrite("./img/captured_face_original.jpg", flipped_frame)
-            gray_frame = cv2.cvtColor(flipped_frame, cv2.COLOR_BGR2GRAY)
-
-            cv2.imwrite("./img/captured_face_gray.jpg", gray_frame)
-            messagebox.showinfo("Capture", "Images captured successfully!")
-            
             original_image = cv2.imread("./img/captured_face_original.jpg")
-            original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
-            original_image = Image.fromarray(original_image)
-            original_photo = ImageTk.PhotoImage(original_image)
             
-            self.canvas_captured_image.create_image(0, 0, image=original_photo, anchor=tk.NW)
-            self.canvas_captured_image.image = original_photo  
+            original_image_rgb = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+
+            face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+            faces = face_classifier.detectMultiScale(original_image_rgb, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
+
+            for (x, y, w, h) in faces:
+                cv2.rectangle(original_image_rgb, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+            image_with_detection = Image.fromarray(original_image_rgb)
+            photo_with_detection = ImageTk.PhotoImage(image_with_detection)
+
+            self.canvas_captured_image.delete("all")  # Clear previous image on canvas
+            self.canvas_captured_image.create_image(0, 0, image=photo_with_detection, anchor=tk.NW)
+            self.canvas_captured_image.image = photo_with_detection
 
     def upload_image(self):
         messagebox.showinfo("Upload", 'Image uploaded')
 
     def quit_app(self):
-        os.remove("./img/captured_face_original.jpg")
-        os.remove("./img/captured_face_gray.jpg")
         self.window.destroy()
+        os.remove("./img/captured_face_original.jpg")
 
     def update(self):
         ret, frame = self.vid.read()
         if ret:
-            # Flip the frame horizontally (mirror effect)
             frame = cv2.flip(frame, 1)
 
             self.photo = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
@@ -73,6 +89,5 @@ class FaceDetectionApp:
         if self.vid.isOpened():
             self.vid.release()
 
-# Create a window and pass it to the FaceDetectionApp class
 root = tk.Tk()
 app = FaceDetectionApp(root, "Face Detection App")
