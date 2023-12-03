@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import os
+import BetaFaceApi as BFapi
 class FaceDetectionApp:
     def __init__(self, window, window_title):
         self.window = window
@@ -14,7 +15,7 @@ class FaceDetectionApp:
         self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, 350) 
         self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 350) 
         
-        self.window.state('zoomed')
+        # self.window.state('zoomed')
         
         self.canvas_frame = tk.Frame(root)
         
@@ -33,6 +34,9 @@ class FaceDetectionApp:
         self.btn_capture = tk.Button(window, text="Capture", width=10, height=2, bg='yellow', command=self.capture)
         self.btn_capture.pack(side=tk.TOP, padx=10, pady=10)
 
+        self.btn_upload = tk.Button(window, text="Upload different Image", width=20, height=2, bg='yellow', command=self.users_upload_image)
+        self.btn_upload.pack(side=tk.TOP, padx=10, pady=10)
+        
         self.btn_upload = tk.Button(window, text="Upload Capture Image", width=20, height=2, bg='yellow', command=self.upload_image)
         self.btn_upload.pack(side=tk.TOP, padx=10, pady=10)
 
@@ -70,8 +74,24 @@ class FaceDetectionApp:
             self.canvas_captured_image.image = photo_with_detection
 
     def upload_image(self):
-        messagebox.showinfo("Upload", 'Image uploaded')
+        image_path = ".\\img\\captured_face_original.jpg"
 
+        api_instance = BFapi.BetaFaceApi(image_path)
+        
+        encoded_image_string = api_instance.image_to_base64(api_instance.image_path)
+        response_json = api_instance.send_image_to_API(encoded_image_string)
+
+        data = api_instance.faceData_race(response_json)
+
+        print(data)
+        print("________________________________________________")
+
+        messagebox.showinfo("Upload", 'Image uploaded')
+        
+
+    def users_upload_image(self):
+        pass
+    
     def quit_app(self):
         self.window.destroy()
         os.remove("./img/captured_face_original.jpg")
@@ -91,3 +111,5 @@ class FaceDetectionApp:
 
 root = tk.Tk()
 app = FaceDetectionApp(root, "Face Detection App")
+
+
