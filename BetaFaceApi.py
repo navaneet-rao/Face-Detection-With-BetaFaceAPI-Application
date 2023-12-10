@@ -2,7 +2,6 @@ import requests
 import json
 import pandas as pd
 import base64
-import os
 
 class BetaFaceApi:
     def __init__(self, image_path):
