@@ -1,8 +1,8 @@
 opencv-python==4.5.3
 opencv-python-headless==4.5.3
-numpy==1.21.1
-Pillow==8.2.0
+numpy==1.22.2
+Pillow==10.2.0
 python-tk==3.9.5
 BetaFaceApi==1.1.2
-requests==2.26.0
+requests==2.31.0
 pandas==1.3.3
